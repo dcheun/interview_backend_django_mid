@@ -37,12 +37,26 @@ class InventoryListCreateView(APIView):
         return Response(serializer.data, status=201)
 
     def get(self, request: Request, *args, **kwargs) -> Response:
-        serializer = self.serializer_class(self.get_queryset(), many=True)
+        queryset = self.get_filtered_queryset(request)
+        serializer = self.serializer_class(queryset, many=True)
 
         return Response(serializer.data, status=200)
 
     def get_queryset(self):
         return self.queryset.all()
+
+    def get_filtered_queryset(self, request: Request):
+        queryset = self.get_queryset()
+        after_date = request.query_params.get('after_date')
+
+        if after_date:
+            try:
+                queryset = queryset.filter(created_at__gte=after_date)
+            except ValueError:
+                # Invalid date format will return unfiltered queryset
+                pass
+
+        return queryset
 
 
 class InventoryRetrieveUpdateDestroyView(APIView):
